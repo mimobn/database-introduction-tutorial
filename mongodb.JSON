@@ -1,0 +1,110 @@
+// Select or create the database
+use libraryDB;
+
+// -------------------------------
+// Insert Authors
+// -------------------------------
+db.authors.insertMany([
+  {
+    _id: ObjectId("000000000000000000000001"),
+    name: "John Doe",
+    birth_year: 1980,
+    nationality: "American"
+  },
+  {
+    _id: ObjectId("000000000000000000000002"),
+    name: "Jane Smith",
+    birth_year: 1975,
+    nationality: "British"
+  }
+]);
+
+// -------------------------------
+// Insert Books
+// -------------------------------
+db.books.insertMany([
+  {
+    title: "MongoDB Basics",
+    author_id: ObjectId("000000000000000000000001"),
+    published_year: 2022,
+    genres: ["Database", "Technology"],
+    available: true
+  },
+  {
+    title: "Learning JavaScript",
+    author_id: ObjectId("000000000000000000000002"),
+    published_year: 2020,
+    genres: ["Programming", "Web"],
+    available: false
+  }
+]);
+
+// -------------------------------
+// Insert Borrower
+// -------------------------------
+const bookId = db.books.findOne({ title: "MongoDB Basics" })._id;
+
+db.borrowers.insertOne({
+  name: "Alice Smith",
+  membership_date: ISODate("2023-01-15T00:00:00Z"),
+  borrowed_books: [bookId]
+});
+
+// -------------------------------
+// Queries
+// -------------------------------
+print("\nBooks published after 2020:");
+printjson(db.books.find({ published_year: { $gt: 2020 } }).toArray());
+
+print("\nAvailable books:");
+printjson(db.books.find({ available: true }).toArray());
+
+print("\nBooks with genre 'Web':");
+printjson(db.books.find({ genres: "Web" }).toArray());
+
+// -------------------------------
+// Update Operations
+// -------------------------------
+db.books.updateOne(
+  { title: "MongoDB Basics" },
+  { $set: { available: false } }
+);
+
+db.books.updateOne(
+  { title: "Learning JavaScript" },
+  { $push: { genres: "Frontend" } }
+);
+
+// -------------------------------
+// Delete Operation
+// -------------------------------
+db.borrowers.deleteOne({ name: "Alice Smith" });
+
+// -------------------------------
+// Index Creation
+// -------------------------------
+db.books.createIndex({ title: 1 });
+
+// -------------------------------
+// Aggregation: Count by Genre
+// -------------------------------
+print("\nBooks per genre:");
+printjson(db.books.aggregate([
+  { $unwind: "$genres" },
+  { $group: { _id: "$genres", count: { $sum: 1 } } }
+]).toArray());
+
+// -------------------------------
+// Aggregation: Lookup Authors
+// -------------------------------
+print("\nBooks with author info:");
+printjson(db.books.aggregate([
+  {
+    $lookup: {
+      from: "authors",
+      localField: "author_id",
+      foreignField: "_id",
+      as: "author_info"
+    }
+  }
+]).toArray());
